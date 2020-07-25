@@ -11,9 +11,14 @@ GET     /                                       App.Index
 #GET     /workspaceID                            App.getWorkspace
 GET     /workspaceID/orgs/:org/workspaces/:workspaceName                           Deployment.GetWorkspace
 GET     /getRuns/workspace/:workspaceID                      Deployment.GetRuns
-GET     /createVariables/orgs/:org/workspaces/:workspaceName                    Deployment.CreateVariable
-GET     /fileUpload                             Deployment.FileUpload
-POST     /createazuremvm                              Convert.AzureWindowsVM
+POST     /createVariables/orgs/:org/workspaces/:workspaceName                    Deployment.CreateVariable
+POST     /createWorkspace/orgs/:org/workspaces/                    Deployment.createWorkspace
+POST     /plan/workspace/:workspaceID                           Deployment.ConfigAndPlan
+GET      /plan/:planID              Deployment.PrintPlan
+POST    /apply/run/:runID           Deployment.ApplyPlan
+GET     /run/:runID                 Deployment.GetRun
+GET     /apply/run/:runID               Deployment.PrintApplyLog
+POST     /createazuremvm                 Convert.AzureWindowsVM
 
 # Ignore favicon requests
 GET     /favicon.ico                            404

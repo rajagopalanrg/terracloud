@@ -22,4 +22,7 @@ type MVMVARS struct {
 	SubnetName             string
 	AvailabilitySet        string
 	IdentityIDs            []string
+	Client_ID              string
+	Client_Secret          string
+	Tenant_ID              string
 }

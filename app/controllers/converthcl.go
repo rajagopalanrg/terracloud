@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"terracloud/app/functions"
 	"terracloud/app/templates"
 
 	"github.com/revel/revel"
@@ -15,5 +16,7 @@ var mvm *templates.MVMVARS
 
 func (c Convert) AzureWindowsVM() revel.Result {
 	c.Params.BindJSON(&mvm)
-	return c.RenderJSON(mvm)
+	vars := make(map[string]interface{})
+	vars = functions.CreateAzureVM(mvm)
+	return c.RenderJSON(vars)
 }

@@ -16,13 +16,73 @@ type Deployment struct {
 var config *tfe.Config
 var client *tfe.Client
 
-/* func (c Deployment) GetHeader() revel.Result {
-	userName := c.Request.Header.Get("userToken")
-	return c.RenderText(userName)
-} */
-func (c Deployment) FileUpload() revel.Result {
-	fileName := c.Params.Files["file"][0].Filename
-	return c.RenderText(fileName)
+type ApplyPlan struct {
+	ApplyMessage string
+}
+
+func (c Deployment) ConfigAndPlan(workspaceID string) revel.Result {
+	filepath := "/home/ubuntu/terraform/apicall"
+	userToken := c.Request.Header.Get("userToken")
+	config := &tfe.Config{
+		Token: userToken,
+	}
+	client, err := tfe.NewClient(config)
+	if err != nil {
+		log.Fatal(err)
+		return c.RenderText(err.Error())
+	}
+	ctx := context.Background()
+	autoQueueRuns := true
+	speculative := false
+	configVersionOptions := tfe.ConfigurationVersionCreateOptions{
+		AutoQueueRuns: &autoQueueRuns,
+		Speculative:   &speculative,
+	}
+	configVersionID, err := functions.ConfigAndPlan(ctx, client, &configVersionOptions, workspaceID, filepath)
+	if err != nil {
+		return c.RenderText(err.Error())
+	}
+	planID, runID := functions.GetPlanID(ctx, client, workspaceID, configVersionID)
+	runDetails := make(map[string]string)
+	runDetails["runID"] = runID
+	runDetails["planID"] = planID
+	runDetails["configVersionID"] = configVersionID
+	return c.RenderJSON(runDetails)
+}
+func (c Deployment) PrintPlan(planID string) revel.Result {
+	userToken := c.Request.Header.Get("userToken")
+	config := &tfe.Config{
+		Token: userToken,
+	}
+	client, err := tfe.NewClient(config)
+	if err != nil {
+		log.Fatal(err)
+	}
+	ctx := context.Background()
+
+	message := functions.PrintPlan(ctx, client, planID)
+	return c.RenderText(message)
+}
+func (c Deployment) ApplyPlan(runID string) revel.Result {
+	userToken := c.Request.Header.Get("userToken")
+	config := &tfe.Config{
+		Token: userToken,
+	}
+	client, err := tfe.NewClient(config)
+	if err != nil {
+		log.Fatal(err)
+		return c.RenderText(err.Error())
+	}
+	ctx := context.Background()
+	var apply *ApplyPlan
+	c.Params.BindJSON(&apply)
+	applyComment := apply.ApplyMessage
+	err = functions.Apply(ctx, client, &applyComment, runID)
+	if err != nil {
+		log.Fatal(err)
+		return c.RenderText(err.Error())
+	}
+	return c.RenderText("Plan Applied")
 }
 func (c Deployment) CreateVariable(org string, workspaceName string) revel.Result {
 	userToken := c.Request.Header.Get("userToken")
@@ -42,6 +102,24 @@ func (c Deployment) CreateVariable(org string, workspaceName string) revel.Resul
 		return c.RenderText(err.Error())
 	}
 	return c.RenderJSON(variable)
+}
+func (c Deployment) CreateWorkspace(org string, workspaceName string) revel.Result {
+	userToken := c.Request.Header.Get("userToken")
+	config := &tfe.Config{
+		Token: userToken,
+	}
+	client, err := tfe.NewClient(config)
+	if err != nil {
+		log.Fatal(err)
+	}
+	ctx := context.Background()
+	var workspaceCreateOptions *tfe.WorkspaceCreateOptions
+	c.Params.BindJSON(&workspaceCreateOptions)
+	workspace, err := functions.CreateWorkspace(ctx, client, org, workspaceCreateOptions)
+	if err != nil {
+		return c.RenderText(err.Error())
+	}
+	return c.RenderJSON(workspace)
 }
 func (c Deployment) GetWorkspace(org string, workspaceName string) revel.Result {
 	//var secureParams *functions.SecureParams
@@ -76,4 +154,42 @@ func (c Deployment) GetRuns(workspaceID string) revel.Result {
 		return c.RenderText(err.Error())
 	}
 	return c.RenderJSON(runs)
+}
+func (c Deployment) GetRun(runID string) revel.Result {
+	userToken := c.Request.Header.Get("userToken")
+	config := &tfe.Config{
+		Token: userToken,
+	}
+	client, err := tfe.NewClient(config)
+	if err != nil {
+		log.Fatal(err.Error)
+		return c.RenderText(err.Error())
+	}
+	ctx := context.Background()
+	run, err := functions.GetRun(ctx, client, runID)
+	if err != nil {
+		log.Fatal(err.Error)
+		return c.RenderText(err.Error())
+	}
+	return c.RenderJSON(run)
+}
+func (c Deployment) PrintApplyLog(runID string) revel.Result {
+	userToken := c.Request.Header.Get("userToken")
+	config := &tfe.Config{
+		Token: userToken,
+	}
+	client, err := tfe.NewClient(config)
+	if err != nil {
+		log.Fatal(err.Error)
+		return c.RenderText(err.Error())
+	}
+	ctx := context.Background()
+	run, err := functions.GetRun(ctx, client, runID)
+	applyID := run.Apply.ID
+	applyLog, err := functions.GetApplyLog(ctx, client, applyID)
+	if err != nil {
+		log.Fatal(err.Error)
+		return c.RenderText(err.Error())
+	}
+	return c.RenderText(applyLog)
 }

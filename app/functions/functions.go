@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
+	"path"
 	"time"
 
 	tfe "github.com/hashicorp/go-tfe"
@@ -27,8 +29,8 @@ func GetWorkspaceID(ctx context.Context, client *tfe.Client, workspaceName strin
 	return workspaceID, err
 	//fmt.Println("workspace ID: ", workspaceID)
 }
-func getRunID(ctx context.Context, client *tfe.Client, workspaceID string, configVersionID string) (string, string) {
-	var runID, runStatus string
+func GetPlanID(ctx context.Context, client *tfe.Client, workspaceID string, configVersionID string) (string, string) {
+	var planID, runID string
 	//fmt.Println("enter get run id")
 	listOptions := tfe.ListOptions{
 		PageSize: 20,
@@ -42,39 +44,37 @@ func getRunID(ctx context.Context, client *tfe.Client, workspaceID string, confi
 		requiredRuns := getRuns.Items
 		//fmt.Println(requiredRuns)
 		if err != nil {
-			fmt.Println("error in getrun")
-			fmt.Println(err)
+			return "Error in listing plans", err.Error()
 		}
 		for _, run := range requiredRuns {
 			if run.ConfigurationVersion.ID == configVersionID && run.Status == "planned" {
 				runID = run.ID
-				runStatus = "planned"
+				planID = run.Plan.ID
+				//runStatus = "planned"
 				break
 			} else if run.ConfigurationVersion.ID == configVersionID && run.Status == "errored" {
 				runID = run.ID
-				runStatus = "errored"
+				planID = run.Plan.ID
+				//runStatus = "errored"
 				break
 			} else if run.ConfigurationVersion.ID == configVersionID && run.Status == "discarded" {
 				runID = run.ID
-				runStatus = "discarded"
+				planID = run.Plan.ID
+				//runStatus = "discarded"
 				break
 			}
 		}
-		if runID != "" {
+		if planID != "" {
 			break
 		}
 		time.Sleep(1 * time.Second)
 	}
-	return runID, runStatus
+	return planID, runID
 }
-func getRun(ctx context.Context, client *tfe.Client, runID string) *tfe.Run {
+func GetRun(ctx context.Context, client *tfe.Client, runID string) (*tfe.Run, error) {
 	fmt.Println("we are in get run")
 	runStruct, err := client.Runs.Read(ctx, runID)
-	if err != nil {
-		fmt.Println("error is here in get run")
-		log.Fatal(err)
-	}
-	return runStruct
+	return runStruct, err
 }
 func GetRuns(ctx context.Context, client *tfe.Client, workspaceID string) (*tfe.RunList, error) {
 	listOptions := tfe.ListOptions{
@@ -87,39 +87,31 @@ func GetRuns(ctx context.Context, client *tfe.Client, workspaceID string) (*tfe.
 
 	return getRuns, err
 }
-func getApplyLog(ctx context.Context, client *tfe.Client, applyID string) {
-
+func GetApplyLog(ctx context.Context, client *tfe.Client, applyID string) (string, error) {
 	getApplyLogs, err := client.Applies.Logs(ctx, applyID)
-	applyLog, err := ioutil.ReadAll(getApplyLogs)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("Please find the log after applying")
-	fmt.Println()
-	fmt.Printf("%s", applyLog)
-	fmt.Println()
+	applyLogByte, err := ioutil.ReadAll(getApplyLogs)
+	applyLog := string(applyLogByte)
+	return applyLog, err
 }
-func printPlan(ctx context.Context, client *tfe.Client, planID string) {
+func PrintPlan(ctx context.Context, client *tfe.Client, planID string) string {
 	getPlanLog, err := client.Plans.Logs(ctx, planID)
-	planLog, err := ioutil.ReadAll(getPlanLog)
+	planLogByte, err := ioutil.ReadAll(getPlanLog)
 	if err != nil {
-		log.Fatal(err)
+		return err.Error()
 	}
-	fmt.Println()
-	fmt.Printf("%s", planLog)
-	fmt.Println()
+	planLog := string(planLogByte)
+	return planLog
 }
-func apply(ctx context.Context, client *tfe.Client, applyComment *string, runID string) {
+func Apply(ctx context.Context, client *tfe.Client, applyComment *string, runID string) error {
 	fmt.Println("enter apply block")
 	runApplyOptions := tfe.RunApplyOptions{
 		Comment: applyComment,
 	}
 	err := client.Runs.Apply(ctx, runID, runApplyOptions)
 	if err != nil {
-		fmt.Println("error is here in apply")
-		log.Fatal(err)
+		return err
 	} else {
-		fmt.Println("Your template is applied successfully")
+		return nil
 	}
 }
 func createConfigVersion(ctx context.Context, client *tfe.Client, autoqueueruns *bool, workspaceID string, uploadPATH string) string {
@@ -141,13 +133,55 @@ func createConfigVersion(ctx context.Context, client *tfe.Client, autoqueueruns 
 	return configVersionID
 }
 func CreateVariables(ctx context.Context, client *tfe.Client, workspaceID string, variableCreateOptions *tfe.VariableCreateOptions) (*tfe.Variable, error) {
-	/* key := "clientID"
-	value := "application_id"
-	variableCreateOptions := tfe.VariableCreateOptions{
-		Key:   &key,
-		Value: &value,
-	} */
+	//create terraform variable
 	variable, err := client.Variables.Create(ctx, workspaceID, *variableCreateOptions)
-
 	return variable, err
+}
+func CreateWorkspace(ctx context.Context, client *tfe.Client, org string, workspaceCreateOptions *tfe.WorkspaceCreateOptions) (*tfe.Workspace, error) {
+	workspace, err := client.Workspaces.Create(ctx, org, *workspaceCreateOptions)
+	return workspace, err
+}
+func ConfigAndPlan(ctx context.Context, client *tfe.Client, configVersionOptions *tfe.ConfigurationVersionCreateOptions, workspaceID string, uploadPATH string) (string, error) {
+	/* configurationVersionOptions := tfe.ConfigurationVersionCreateOptions{
+		AutoQueueRuns: autoqueueruns,
+	} */
+	/* var filename string
+	if err != nil {
+		//fmt.Println("the upload block returns error")
+		log.Fatal(err)
+	}
+
+	for _, file := range files {
+		filename = uploadPATH + "/" + file.Name()
+	} */
+	newConfigurationVersion, err := client.ConfigurationVersions.Create(ctx, workspaceID, *configVersionOptions)
+	if err != nil {
+		return "", err
+	}
+	UploadURL := newConfigurationVersion.UploadURL
+	configVersionID := newConfigurationVersion.ID
+	err = client.ConfigurationVersions.Upload(ctx, UploadURL, uploadPATH)
+	if err != nil {
+		//fmt.Println("the upload block returns error")
+		return "", err
+	}
+	//fmt.Println("your run is created")
+
+	return configVersionID, err
+}
+func WriteFileToDisk(filename string, file []byte, filepath string) error {
+	err := os.MkdirAll(filepath, 777)
+	if err != nil {
+		return err
+	} else {
+		localfile, err := os.Create(path.Join(filepath, filename))
+		if err != nil {
+			return err
+		}
+		_, err = localfile.Write(file)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 }
