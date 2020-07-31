@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"log"
+	"os"
 	"terracloud/app/functions"
 
 	"github.com/hashicorp/go-tfe"
@@ -21,7 +22,9 @@ type ApplyPlan struct {
 }
 
 func (c Deployment) ConfigAndPlan(workspaceID string) revel.Result {
-	filepath := "/home/ubuntu/terraform/apicall"
+	path, err := os.Getwd()
+	filepath := path + "\\" + workspaceID + "\\"
+	//filepath := "/home/ubuntu/terraform/apicall"
 	userToken := c.Request.Header.Get("userToken")
 	config := &tfe.Config{
 		Token: userToken,

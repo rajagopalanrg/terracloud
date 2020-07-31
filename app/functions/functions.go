@@ -1,12 +1,15 @@
 package functions
 
 import (
+	"bufio"
+	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
+	"strings"
 	"time"
 
 	tfe "github.com/hashicorp/go-tfe"
@@ -169,9 +172,21 @@ func ConfigAndPlan(ctx context.Context, client *tfe.Client, configVersionOptions
 
 	return configVersionID, err
 }
-func WriteFileToDisk(filename string, file []byte, filepath string) error {
-	err := os.MkdirAll(filepath, 777)
+func WriteFileToDisk(file string, filecontent map[string]interface{}, filepath string) error {
+	err := os.MkdirAll(filepath, 766)
 	if err != nil {
+		return err
+	} else {
+		terraformfile := filepath + file
+		terraformjson, err := json.MarshalIndent(filecontent, "", "")
+		if err != nil {
+			return err
+		} else {
+			ioutil.WriteFile(terraformfile, terraformjson, os.ModePerm)
+			return err
+		}
+	}
+	/* if err != nil {
 		return err
 	} else {
 		localfile, err := os.Create(path.Join(filepath, filename))
@@ -183,5 +198,17 @@ func WriteFileToDisk(filename string, file []byte, filepath string) error {
 			return err
 		}
 		return nil
-	}
+	} */
+}
+func Gzip(terraformfile string) string {
+
+	f, _ := os.Open(terraformfile)
+	reader := bufio.NewReader(f)
+	content, _ := ioutil.ReadAll(reader)
+	terraformfile = strings.Replace(terraformfile, ".tf", ".tar.gz", -1)
+	f, _ = os.Create(terraformfile)
+	w := gzip.NewWriter(f)
+	w.Write(content)
+	w.Close()
+	return terraformfile
 }

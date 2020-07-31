@@ -1,12 +1,5 @@
 package templates
 
-type DataDisks struct {
-	CreateOption     string
-	Lun              int
-	Name             string
-	DataDiskSizeInGB int
-}
-
 type MVMVARS struct {
 	Location               string
 	VMName                 string
@@ -16,14 +9,11 @@ type MVMVARS struct {
 	VMSku                  string
 	VMSize                 string
 	OSDataDiskSizeInGB     int
-	StorageDataDisks       []DataDisks
+	DataDisks              []int
 	BootDiagStorageAccount string
 	VnetName               string
 	SubnetName             string
 	AvailabilitySet        string
 	IdentityID             []string
-	Client_ID              string
-	Client_Secret          string
-	Tenant_ID              string
 	Subscription_ID        string
 }
