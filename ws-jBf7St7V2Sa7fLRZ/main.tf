@@ -23,7 +23,7 @@ provider "azurerm" {
 module "vm" {
 	version =  "1.0.4"
 	source =  "app.terraform.io/ClDevTeam/vm/azurerm"
-	location = "westeurope"
+	location = "eastus"
 	vm_name = "euwmvm01"
 	resource_group_name = "Testing"
 	admin_username = "winuser"
@@ -31,8 +31,7 @@ module "vm" {
 	vm_sku = "2016-Datacenter"
 	vm_size = "Standard_DS1_v2"
 	os_data_disk_size_in_gb = 0
-	data_disks = [ 0,
-	data_disks = 120 ]
+	data_disks = [ 60,120 ]
 	vnet_name = "vnet001"
 	subnet_name = "subnet001"
 }

@@ -83,14 +83,12 @@ func CreateAzureVM(mvmvars *templates.MVMVARS, terraformfile string) error {
 			len := inputs.Field(i).Len()
 			value := inputs.Field(i).Interface().([]int)
 			for j := 0; j < len; j++ {
-
-				//fmt.Fprintf(file, "%b = %v", len, value)
 				if j == 0 {
-					fmt.Fprintf(file, "\t%s = [ %v,\n", moduleKey, value[j])
+					fmt.Fprintf(file, "\t%s = [ %v,", moduleKey, value[j])
 				} else if j+1 == len {
-					fmt.Fprintf(file, "\t%s = %v ]\n", moduleKey, value[j])
+					fmt.Fprintf(file, "%v ]\n", value[j])
 				} else {
-					fmt.Fprintf(file, "\t%s = %v ,\n", moduleKey, value[j])
+					fmt.Fprintf(file, "%v ,", value[j])
 				}
 			}
 		} else {
