@@ -12,6 +12,7 @@ import (
 
 type vmdata map[string]map[string]string
 type vmreturn interface{}
+type array []int
 
 func CreateAzureVM(mvmvars *templates.MVMVARS, terraformfile string) error {
 	/* vars := make(map[string]map[string]string)
@@ -75,12 +76,23 @@ func CreateAzureVM(mvmvars *templates.MVMVARS, terraformfile string) error {
 			log.Print(typeofinput.Field(i).Name)
 			continue
 		}
-		//fmt.Printf("Key: %s\tValue: %s", inputs.Field(i), inputs.Field(i).Kind())
 		//module["azureVM"][moduleKey] = moduleValue
 		if moduleKey == "os_data_disk_size_in_gb" {
 			fmt.Fprintf(file, "\t%s = %b\n", moduleKey, moduleValue)
 		} else if moduleKey == "data_disks" {
-			fmt.Fprintf(file, "\t%s = %v\n", moduleKey, moduleValue)
+			len := inputs.Field(i).Len()
+			value := inputs.Field(i).Interface().([]int)
+			for j := 0; j < len; j++ {
+
+				//fmt.Fprintf(file, "%b = %v", len, value)
+				if j == 0 {
+					fmt.Fprintf(file, "\t%s = [ %v,\n", moduleKey, value[j])
+				} else if j+1 == len {
+					fmt.Fprintf(file, "\t%s = %v ]\n", moduleKey, value[j])
+				} else {
+					fmt.Fprintf(file, "\t%s = %v ,\n", moduleKey, value[j])
+				}
+			}
 		} else {
 			fmt.Fprintf(file, "\t%s = \"%s\"\n", moduleKey, moduleValue)
 		}
