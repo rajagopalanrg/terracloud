@@ -15,16 +15,11 @@ type vmreturn interface{}
 type array []int
 
 func CreateAzureVM(mvmvars *templates.MVMVARS, terraformfile string) error {
-	/* vars := make(map[string]map[string]string)
-	template := make(map[string]interface{})
-	azurerm := make(map[string]map[string]interface{})
-	module := make(map[string]map[string]interface{}) */
 
 	file, err := os.Create(terraformfile)
 	if err != nil {
 		return err
 	}
-
 	fmt.Fprintf(file, "variable \"client_id\" {\n\t type = string \n}")
 	fmt.Fprintf(file, "\nvariable \"client_secret\" {\n\t type = string \n}")
 	fmt.Fprintf(file, "\nvariable \"tenant_id\" {\n\t type = string \n}")
@@ -40,29 +35,8 @@ func CreateAzureVM(mvmvars *templates.MVMVARS, terraformfile string) error {
 	fmt.Fprintf(file, "\nmodule \"vm\" {\n")
 	fmt.Fprintf(file, "\tversion =  \"1.0.4\"\n")
 	fmt.Fprintf(file, "\tsource =  \"app.terraform.io/ClDevTeam/vm/azurerm\"\n")
+
 	defer file.Close()
-	//feature := make(map[string]string)
-
-	/* vars["tenant_id"] = make(map[string]string)
-	vars["tenant_id"]["type"] = "string"
-	vars["client_id"] = make(map[string]string)
-	vars["client_id"]["type"] = "string"
-	vars["client_secret"] = make(map[string]string)
-	vars["client_secret"]["type"] = "string"
-	template["variable"] = vars
-
-	azurerm["azurerm"] = make(map[string]interface{})
-	azurerm["azurerm"]["version"] = "=2.4.0"
-	azurerm["azurerm"]["subscription_id"] = mvmvars.Subscription_ID
-	azurerm["azurerm"]["client_id"] = "${var.client_id}"
-	azurerm["azurerm"]["client_secret"] = "${var.client_secret}"
-	azurerm["azurerm"]["tenant_id"] = "${var.tenant_id}"
-	azurerm["azurerm"]["features"] = map[string]string{}
-	template["provider"] = azurerm
-
-	module["azureVM"] = make(map[string]interface{})
-	module["azureVM"]["source"] = "app.terraform.io/ClDevTeam/vm/azurerm"
-	module["azureVM"]["version"] = "1.0.4" */
 	inputs := reflect.ValueOf(*mvmvars)
 	typeofinput := inputs.Type()
 	for i := 0; i < inputs.NumField(); i++ {
@@ -72,13 +46,13 @@ func CreateAzureVM(mvmvars *templates.MVMVARS, terraformfile string) error {
 		moduleKey := strcase.ToSnake(typeofinput.Field(i).Name)
 		moduleValue := inputs.Field(i).Interface()
 		//log.Print(inputs.Field(i).Kind())
-		if (inputs.Field(i).Kind() == reflect.Slice && inputs.Field(i).IsNil()) || (inputs.Field(i).Kind() == reflect.String && inputs.Field(i).IsZero()) {
+		if (inputs.Field(i).Kind() == reflect.Slice && inputs.Field(i).IsNil()) || (inputs.Field(i).Kind() == reflect.String && inputs.Field(i).IsZero()) || (inputs.Field(i).Kind() == reflect.Int && inputs.Field(i).IsZero()) {
 			log.Print(typeofinput.Field(i).Name)
 			continue
 		}
 		//module["azureVM"][moduleKey] = moduleValue
 		if moduleKey == "os_data_disk_size_in_gb" {
-			fmt.Fprintf(file, "\t%s = %b\n", moduleKey, moduleValue)
+			fmt.Fprintf(file, "\t%s = %v\n", moduleKey, moduleValue)
 		} else if moduleKey == "data_disks" {
 			len := inputs.Field(i).Len()
 			value := inputs.Field(i).Interface().([]int)
@@ -96,7 +70,6 @@ func CreateAzureVM(mvmvars *templates.MVMVARS, terraformfile string) error {
 		}
 	}
 	fmt.Fprintf(file, "}\n")
-	//template["module"] = module
 
 	return nil
 }

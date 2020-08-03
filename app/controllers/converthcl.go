@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/go-tfe"
 	"github.com/revel/revel"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 type Convert struct {
@@ -31,14 +32,20 @@ func (c Convert) AzureWindowsVM(workspaceName string, org string) revel.Result {
 	path, err := os.Getwd()
 	terraformfile := path + "\\" + workspaceID + "\\main.tf"
 
-	if err != nil {
-		return c.RenderText(err.Error())
-	}
 	c.Params.BindJSON(&mvm)
+	v := validator.New()
+	err = v.Struct(mvm)
+	if err != nil {
+		for _, e := range err.(validator.ValidationErrors) {
+			log.Println(e)
+			return c.RenderText(err.Error())
+		}
+	}
 	//vars := make(map[string]interface{})
+
 	err = functions.CreateAzureVM(mvm, terraformfile)
 	if err != nil {
-		c.RenderText(err.Error())
+		return c.RenderText(err.Error())
 	}
 	gzipfile := functions.Gzip(terraformfile)
 	//err = functions.WriteFileToDisk(filename, vars, filepath)

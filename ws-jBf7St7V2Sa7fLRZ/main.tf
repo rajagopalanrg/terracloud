@@ -30,8 +30,9 @@ module "vm" {
 	admin_password = "Password@2020"
 	vm_sku = "2016-Datacenter"
 	vm_size = "Standard_DS1_v2"
-	os_data_disk_size_in_gb = 0
+	os_data_disk_size_in_gb = 127
 	data_disks = [ 60,120 ]
 	vnet_name = "vnet001"
-	subnet_name = "subnet001"
+	subnet_name = "subnet002"
+	subscription_id = "3dc3cd1a-d5cd-4e3e-a648-b2253048af83"
 }
