@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"terracloud/app/functions"
+	"terracloud/app/templates"
 
 	"github.com/hashicorp/go-tfe"
 	"github.com/revel/revel"
@@ -12,13 +13,7 @@ import (
 
 type Deployment struct {
 	*revel.Controller
-}
-
-var config *tfe.Config
-var client *tfe.Client
-
-type ApplyPlan struct {
-	ApplyMessage string
+	apply *templates.ApplyPlan
 }
 
 func (c Deployment) ConfigAndPlan(workspaceID string) revel.Result {
@@ -77,9 +72,8 @@ func (c Deployment) ApplyPlan(runID string) revel.Result {
 		return c.RenderText(err.Error())
 	}
 	ctx := context.Background()
-	var apply *ApplyPlan
-	c.Params.BindJSON(&apply)
-	applyComment := apply.ApplyMessage
+	c.Params.BindJSON(&c.apply)
+	applyComment := c.apply.ApplyMessage
 	err = functions.Apply(ctx, client, &applyComment, runID)
 	if err != nil {
 		log.Fatal(err)
@@ -165,13 +159,13 @@ func (c Deployment) GetRun(runID string) revel.Result {
 	}
 	client, err := tfe.NewClient(config)
 	if err != nil {
-		log.Fatal(err.Error)
+		log.Fatal(err.Error())
 		return c.RenderText(err.Error())
 	}
 	ctx := context.Background()
 	run, err := functions.GetRun(ctx, client, runID)
 	if err != nil {
-		log.Fatal(err.Error)
+		log.Fatal(err.Error())
 		return c.RenderText(err.Error())
 	}
 	return c.RenderJSON(run)
@@ -183,7 +177,7 @@ func (c Deployment) PrintApplyLog(runID string) revel.Result {
 	}
 	client, err := tfe.NewClient(config)
 	if err != nil {
-		log.Fatal(err.Error)
+		log.Fatal(err.Error())
 		return c.RenderText(err.Error())
 	}
 	ctx := context.Background()
@@ -191,7 +185,7 @@ func (c Deployment) PrintApplyLog(runID string) revel.Result {
 	applyID := run.Apply.ID
 	applyLog, err := functions.GetApplyLog(ctx, client, applyID)
 	if err != nil {
-		log.Fatal(err.Error)
+		log.Fatal(err.Error())
 		return c.RenderText(err.Error())
 	}
 	return c.RenderText(applyLog)

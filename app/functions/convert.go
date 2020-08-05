@@ -10,9 +10,7 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-type vmdata map[string]map[string]string
-type vmreturn interface{}
-type array []int
+const tagName = "required"
 
 func CreateAzureVM(mvmvars *templates.MVMVARS, terraformfile string) error {
 
@@ -40,12 +38,23 @@ func CreateAzureVM(mvmvars *templates.MVMVARS, terraformfile string) error {
 	inputs := reflect.ValueOf(*mvmvars)
 	typeofinput := inputs.Type()
 	for i := 0; i < inputs.NumField(); i++ {
-		if typeofinput.Field(i).Name == "Client_ID" || typeofinput.Field(i).Name == "Client_Secret" || typeofinput.Field(i).Name == "Tenant_ID" || typeofinput.Field(i).Name == "Subscription_ID" {
-			continue
-		}
 		moduleKey := strcase.ToSnake(typeofinput.Field(i).Name)
 		moduleValue := inputs.Field(i).Interface()
+		//log.Println(typeofinput.Field(i).Tag.Get(tagName))
+		if moduleKey == "subscription_id" {
+			continue
+		}
 		//log.Print(inputs.Field(i).Kind())
+		/* if typeofinput.Field(i).Tag.Get(tagName) == "true" {
+			if (inputs.Field(i).Kind() == reflect.Slice && inputs.Field(i).IsNil()) || (inputs.Field(i).Kind() == reflect.String && inputs.Field(i).IsZero()) || (inputs.Field(i).Kind() == reflect.Int && inputs.Field(i).IsZero()) {
+				return fmt.Errorf("The required field %v is missing", moduleKey)
+			}
+		} else if typeofinput.Field(i).Tag.Get(tagName) == "false" {
+			if (inputs.Field(i).Kind() == reflect.Slice && inputs.Field(i).IsNil()) || (inputs.Field(i).Kind() == reflect.String && inputs.Field(i).IsZero()) || (inputs.Field(i).Kind() == reflect.Int && inputs.Field(i).IsZero()) {
+				log.Print(typeofinput.Field(i).Name)
+				continue
+			}
+		} */
 		if (inputs.Field(i).Kind() == reflect.Slice && inputs.Field(i).IsNil()) || (inputs.Field(i).Kind() == reflect.String && inputs.Field(i).IsZero()) || (inputs.Field(i).Kind() == reflect.Int && inputs.Field(i).IsZero()) {
 			log.Print(typeofinput.Field(i).Name)
 			continue

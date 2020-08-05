@@ -33,6 +33,5 @@ module "vm" {
 	os_data_disk_size_in_gb = 127
 	data_disks = [ 60,120 ]
 	vnet_name = "vnet001"
-	subnet_name = "subnet002"
-	subscription_id = "3dc3cd1a-d5cd-4e3e-a648-b2253048af83"
+	subnet_name = "sbn001"
 }

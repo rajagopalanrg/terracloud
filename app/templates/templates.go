@@ -3,7 +3,9 @@ package templates
 type Common struct {
 	Resources interface{}
 }
-
+type ApplyPlan struct {
+	ApplyMessage string
+}
 type MVMVARS struct {
 	Location               string   `json:"location" validate:"required"`
 	VMName                 string   `json:"vm_name" validate:"required"`
@@ -12,12 +14,12 @@ type MVMVARS struct {
 	AdminPassword          string   `json:"admin_password" validate:"required"`
 	VMSku                  string   `json:"vm_sku" validate:"required"`
 	VMSize                 string   `json:"vm_size" validate:"required"`
-	OSDataDiskSizeInGB     int      `json:"osdatadisksizeingb" validate:"required"`
+	OSDataDiskSizeInGB     int      `json:"osdatadisksizeingb" required:"false"`
 	DataDisks              []int    `json:"data_disks" validate:"required"`
-	BootDiagStorageAccount string   `json:"boot_diag_storage"`
+	BootDiagStorageAccount string   `json:"boot_diag_storage" `
 	VnetName               string   `json:"vnet_name" validate:"required"`
 	SubnetName             string   `json:"subnet_name" validate:"required"`
-	AvailabilitySet        string   `json:"availability_set"`
-	IdentityID             []string `json:"identity_id"`
-	SubscriptionID         string   `json:"subscription_Id" validate:"required"`
+	AvailabilitySet        string   `json:"availability_set" `
+	IdentityID             []string `json:"identity_id" `
+	SubscriptionID         string   `json:"subscription_Id" `
 }

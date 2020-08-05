@@ -7,17 +7,17 @@ import (
 	"terracloud/app/functions"
 	"terracloud/app/templates"
 
+	"github.com/go-playground/validator"
 	"github.com/hashicorp/go-tfe"
 	"github.com/revel/revel"
-	"gopkg.in/go-playground/validator.v9"
 )
 
 type Convert struct {
 	*revel.Controller
+	mvm *templates.MVMVARS
 }
 
-var mvm *templates.MVMVARS
-
+//var mvm *templates.MVMVARS
 func (c Convert) AzureWindowsVM(workspaceName string, org string) revel.Result {
 	userToken := c.Request.Header.Get("userToken")
 	config := &tfe.Config{
@@ -25,29 +25,35 @@ func (c Convert) AzureWindowsVM(workspaceName string, org string) revel.Result {
 	}
 	client, err := tfe.NewClient(config)
 	if err != nil {
-		log.Fatal(err)
+		return c.RenderText(err.Error())
 	}
 	ctx := context.Background()
 	workspaceID, err := functions.GetWorkspaceID(ctx, client, workspaceName, org)
+	if err != nil {
+		return c.RenderText(err.Error())
+	}
 	path, err := os.Getwd()
 	terraformfile := path + "\\" + workspaceID + "\\main.tf"
 
-	c.Params.BindJSON(&mvm)
+	c.Params.BindJSON(&c.mvm)
 	v := validator.New()
-	err = v.Struct(mvm)
+	err = v.Struct(c.mvm)
+	errlist := make(map[string][]string)
+	var errors []string
 	if err != nil {
 		for _, e := range err.(validator.ValidationErrors) {
 			log.Println(e)
-			return c.RenderText(err.Error())
+			errors = append(errors, e.Field())
+			errlist["errors"] = errors
 		}
+		return c.RenderText(err.Error())
 	}
-	//vars := make(map[string]interface{})
-
-	err = functions.CreateAzureVM(mvm, terraformfile)
+	err = functions.CreateAzureVM(c.mvm, terraformfile)
 	if err != nil {
 		return c.RenderText(err.Error())
 	}
 	gzipfile := functions.Gzip(terraformfile)
+	log.Println(c.mvm)
 	//err = functions.WriteFileToDisk(filename, vars, filepath)
 	return c.RenderText(gzipfile)
 }
