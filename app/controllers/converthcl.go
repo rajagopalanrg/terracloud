@@ -17,7 +17,6 @@ type Convert struct {
 	mvm *templates.MVMVARS
 }
 
-//var mvm *templates.MVMVARS
 func (c Convert) AzureWindowsVM(workspaceName string, org string) revel.Result {
 	userToken := c.Request.Header.Get("userToken")
 	config := &tfe.Config{
@@ -54,6 +53,6 @@ func (c Convert) AzureWindowsVM(workspaceName string, org string) revel.Result {
 	}
 	gzipfile := functions.Gzip(terraformfile)
 	log.Println(c.mvm)
-	//err = functions.WriteFileToDisk(filename, vars, filepath)
+
 	return c.RenderText(gzipfile)
 }
