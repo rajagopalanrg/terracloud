@@ -19,6 +19,7 @@ POST    /apply/run/:runID           Deployment.ApplyPlan
 GET     /run/:runID                 Deployment.GetRun
 GET     /apply/run/:runID               Deployment.PrintApplyLog
 POST     /orgs/:org/workspace/:workspaceName/createazuremvm                 Convert.AzureWindowsVM
+POST    /collect                                                            Convert.Collect
 
 # Ignore favicon requests
 GET     /favicon.ico                            404

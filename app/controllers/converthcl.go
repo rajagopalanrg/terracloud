@@ -15,8 +15,16 @@ import (
 type Convert struct {
 	*revel.Controller
 	mvm *templates.MVMVARS
+	res *templates.Resources
+	des *templates.Designs
 }
 
+func (c Convert) Collect() revel.Result {
+	//c.Params.BindJSON(&c.res)
+	designID := 48
+	functions.Collect(designID)
+	return nil
+}
 func (c Convert) AzureWindowsVM(workspaceName string, org string) revel.Result {
 	userToken := c.Request.Header.Get("userToken")
 	config := &tfe.Config{

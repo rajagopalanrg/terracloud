@@ -1,6 +1,20 @@
 package templates
 
-type Common struct {
+type Designs struct {
+	ID            string
+	Resourceid    string
+	Dependson     interface{}
+	Configuration interface{}
+}
+
+type Resource struct {
+	ResourceID   string `json:"resource_id" validate:"required"`
+	ResourceType string `json:"resource_type" validate:"required"`
+	Config       interface{}
+	DependsOn    []string
+}
+
+type Resources struct {
 	Resources interface{}
 }
 type ApplyPlan struct {

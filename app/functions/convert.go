@@ -1,6 +1,7 @@
 package functions
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -8,9 +9,67 @@ import (
 	"terracloud/app/templates"
 
 	"github.com/iancoleman/strcase"
+	"github.com/lib/pq"
+	_ "github.com/lib/pq"
 )
 
+type Designs struct {
+	ID            string
+	Resourceid    string
+	Dependson     pq.StringArray
+	Configuration interface{}
+}
+
 const tagName = "required"
+const (
+	host     = "13.68.247.155"
+	port     = 5432
+	user     = "postgres"
+	password = "October201!9"
+	dbname   = "meg"
+)
+
+func Collect(designID int) {
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+	//var designs []Designs
+	var d Designs
+	fmt.Println("Successfully connected!")
+
+	//userSql := "SELECT resources FROM designs WHERE id = $1".
+	getResource := "select json_array_elements(resource -> 'resources')->>'id' as id,json_array_elements(resource -> 'resources')->>'resourceid' as resourceid,json_array_elements(resource -> 'resources')->'dependson' as dependson from designs where id = $1"
+	rows, err := db.Query(getResource, designID)
+	if err != nil {
+		log.Println("Failed to execute query: ", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+
+		err = rows.Scan(&d.ID, &d.Resourceid, pq.Array(&d.Dependson))
+		if err != nil {
+			log.Println("Failed to execute query: ", err)
+		}
+		inputs := reflect.ValueOf(d)
+		typeofinput := inputs.Type()
+		for i := 0; i < inputs.NumField(); i++ {
+			moduleKey := strcase.ToSnake(typeofinput.Field(i).Name)
+			moduleValue := inputs.Field(i).Interface()
+			valueType := inputs.Field(i).Kind()
+			log.Println(moduleKey, moduleValue, valueType)
+		}
+	}
+}
 
 func CreateAzureVM(mvmvars *templates.MVMVARS, terraformfile string) error {
 	var subscription_id interface{}
